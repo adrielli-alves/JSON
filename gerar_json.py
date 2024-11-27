@@ -13,30 +13,6 @@ gdf = gpd.GeoDataFrame(geometry=pontos)
 # Calcula a envoltória convexa (convex hull)
 envoltoria_convexa = gdf.geometry.unary_union.convex_hull
 coordinates = [list(envoltoria_convexa.exterior.coords)]
-print(coordinates)
+print(json.dumps(coordinates))
 
-'''# Cria o dicionário no formato GeoJSON
-geojson = {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {
-                "name": "MR ABELARDO LUZ",
-                "description": "MR ABELARDO LUZ"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [list(envoltoria_convexa.exterior.coords)]
-            }
-        }
-    ]
-}'''
-
-# Exibe o JSON resultante
 #print(json.dumps(geojson, indent=2))
-
-# Salva o resultado em um arquivo .json
-'''with open('regiao_cidades.json', 'w') as f:
-    json.dump(geojson, f, indent=2)
-'''

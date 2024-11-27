@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 import re
 import geopandas as gpd
@@ -38,9 +39,14 @@ def calcular_envoltoria_convexa(coordenadas):
     
     # Usar union_all() para combinar as geometrias e calcular a envoltória convexa
     envoltoria_convexa = gdf.geometry.union_all().convex_hull
+    try:
+        coordinates = [list(envoltoria_convexa.exterior.coords)]
+    except AttributeError:
+        coordinates = []
     
     # Retorna as coordenadas da envoltória convexa
-    return envoltoria_convexa
+    return json.dumps(coordinates)
+
 
 # Aplicando a função para criar a coluna de coordenadas como listas
 df['Coordenadas'] = df['Coordenadas'].apply(parse_coordinates)
@@ -49,10 +55,10 @@ df['Coordenadas'] = df['Coordenadas'].apply(parse_coordinates)
 micro_regioes = df.groupby('MicroRegiao')['Coordenadas'].apply(lambda x: [coord for sublist in x for coord in sublist]).reset_index()
 
 for i in range(len(micro_regioes)):
-    coordenadas_finais = calcular_envoltoria_convexa(micro_regioes['Coordenadas'][i])
-    micro_regioes['Coordenadas'][i] = coordenadas_finais
+    coordenadas_finais = calcular_envoltoria_convexa(micro_regioes.loc[i, 'Coordenadas'])
+    micro_regioes.loc[i, 'Coordenadas'] = coordenadas_finais
 
-    print(coordenadas_finais)
+    #print(coordenadas_finais)
 
 # Criar um novo DataFrame para a nova aba
 result_df = micro_regioes[['MicroRegiao', 'Coordenadas']]
