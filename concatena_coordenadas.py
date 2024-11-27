@@ -1,6 +1,8 @@
-'''import pandas as pd
-import ast
+import pandas as pd
 import re
+import geopandas as gpd
+from shapely.geometry import Point
+import ast
 
 # Carregar o arquivo Excel
 # Substitua 'seu_arquivo.xlsx' pelo caminho do seu arquivo
@@ -12,7 +14,7 @@ def parse_coordinates(coord_str):
     coord_str = coord_str.strip()
     
     # Imprimir as coordenadas para depuração
-    print(f"Verificando coordenadas: {coord_str}")
+    #print(f"Verificando coordenadas: {coord_str}")
     
     # Usar uma expressão regular para limpar coordenadas mal formadas, como aspas extras ou outros caracteres
     coord_str = re.sub(r'["\']', '', coord_str)  # Remover aspas extras se houver
@@ -28,32 +30,39 @@ def parse_coordinates(coord_str):
         print(f"Formato inválido para coordenadas: {coord_str}")
         return []
 
+def calcular_envoltoria_convexa(coordenadas):
+    # Criar uma lista de objetos Point a partir das coordenadas
+    pontos = [Point(lon, lat) for lon, lat in coordenadas]
+    # Criar um GeoDataFrame a partir dos pontos
+    gdf = gpd.GeoDataFrame(geometry=pontos)
+    
+    # Usar union_all() para combinar as geometrias e calcular a envoltória convexa
+    envoltoria_convexa = gdf.geometry.union_all().convex_hull
+    
+    # Retorna as coordenadas da envoltória convexa
+    return envoltoria_convexa
+
 # Aplicando a função para criar a coluna de coordenadas como listas
 df['Coordenadas'] = df['Coordenadas'].apply(parse_coordinates)
 
 # Agrupando os dados pela micro região e concatenando as coordenadas
 micro_regioes = df.groupby('MicroRegiao')['Coordenadas'].apply(lambda x: [coord for sublist in x for coord in sublist]).reset_index()
 
+for i in range(len(micro_regioes)):
+    coordenadas_finais = calcular_envoltoria_convexa(micro_regioes['Coordenadas'][i])
+    micro_regioes['Coordenadas'][i] = coordenadas_finais
+
+    print(coordenadas_finais)
+
 # Criar um novo DataFrame para a nova aba
 result_df = micro_regioes[['MicroRegiao', 'Coordenadas']]
 
 # Salvar no Excel, criando uma nova aba chamada "MicroRegioes_Concatenadas"
-with pd.ExcelWriter('seu_arquivo_atualizado.xlsx', engine='xlsxwriter') as writer:
+with pd.ExcelWriter('teste_coordenadas_atualizado.xlsx', engine='xlsxwriter') as writer:
     # Salvar a aba original
     df.to_excel(writer, sheet_name='Original', index=False)
     
     # Salvar a nova aba com as micro regiões e coordenadas
     result_df.to_excel(writer, sheet_name='MicroRegioes_Concatenadas', index=False)
 
-print("Novo arquivo com a aba 'MicroRegioes_Concatenadas' foi salvo com sucesso!")
-'''
-
-from geopy.distance import geodesic
-
-# Example coordinates
-coord1 = (-46.3678680908, -22.3782431576)
-coord2 = (-46.360196377, -22.388876128)
-
-# Calculate distance
-distance = geodesic(coord1, coord2).meters  # in meters
-print(f"Distance: {distance} meters")
+print("Novo arquivo com a aba 'teste_coordenadas' foi salvo com sucesso!")
