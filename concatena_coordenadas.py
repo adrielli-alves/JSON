@@ -31,9 +31,21 @@ def parse_coordinates(coord_str):
         print(f"Formato inválido para coordenadas: {coord_str}")
         return []
 
-def remove_coordenadas_duplicadas(coordenadas):
-    # Criar uma lista a partir das coordenadas removendo todas as duplicadas
-    return 0
+def calcular_envoltoria_convexa(coordenadas):
+    # Criar uma lista de objetos Point a partir das coordenadas
+    pontos = [Point(lon, lat) for lon, lat in coordenadas]
+    # Criar um GeoDataFrame a partir dos pontos
+    gdf = gpd.GeoDataFrame(geometry=pontos)
+    
+    # Usar union_all() para combinar as geometrias e calcular a envoltória convexa
+    envoltoria_convexa = gdf.geometry.union_all().convex_hull
+    try:
+        coordinates = [list(envoltoria_convexa.exterior.coords)]
+    except AttributeError:
+        coordinates = []
+    
+    # Retorna as coordenadas da envoltória convexa
+    return json.dumps(coordinates)
 
 
 # Aplicando a função para criar a coluna de coordenadas como listas
@@ -43,7 +55,7 @@ df['Coordenadas'] = df['Coordenadas'].apply(parse_coordinates)
 micro_regioes = df.groupby('MicroRegiao')['Coordenadas'].apply(lambda x: [coord for sublist in x for coord in sublist]).reset_index()
 
 for i in range(len(micro_regioes)):
-    coordenadas_finais = remove_coordenadas_duplicadas(micro_regioes.loc[i, 'Coordenadas'])
+    coordenadas_finais = calcular_envoltoria_convexa(micro_regioes.loc[i, 'Coordenadas'])
     micro_regioes.loc[i, 'Coordenadas'] = coordenadas_finais
 
     #print(coordenadas_finais)
